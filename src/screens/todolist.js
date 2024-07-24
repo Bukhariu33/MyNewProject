@@ -1,30 +1,96 @@
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList } from 'react-native'
-import React, { useState } from 'react'
-import ToDoButtons from '../components/toDoButtons';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import { Icon } from 'react-native-elements';
 
 export default function Todolist() {
   const [inputValue, setInputValue] = useState('');
   const [todos, setTodos] = useState([]);
+  const [editIndex, setEditIndex] = useState(null);
+  const [filter, setFilter] = useState('all');
 
-  const handleSubmit = () => {
-    if (inputValue.trim()) {
-      setTodos([...todos, inputValue.trim()]);
-      setInputValue('');
-    } else {
-      alert('Please enter something');
+  useEffect(() => {
+    loadTodos();
+  }, []);
+
+  const saveTodos = async (todos) => {
+    try {
+      await AsyncStorage.setItem('todos', JSON.stringify(todos));
+    } catch (error) {
+      Alert.alert('Error', 'Failed to save todos');
     }
   };
 
-  const handleAdd = (index) => {
-    // Add functionality (e.g., add a new todo at the same position)
-    const newTodos = [...todos];
-    newTodos.splice(index + 1, 0, `New todo ${index + 2}`);
-    setTodos(newTodos);
+  const loadTodos = async () => {
+    try {
+      const storedTodos = await AsyncStorage.getItem('todos');
+      if (storedTodos) {
+        setTodos(JSON.parse(storedTodos));
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to load todos');
+    }
+  };
+
+  const handleSubmit = () => {
+    if (inputValue.trim()) {
+      let updatedTodos;
+      if (editIndex !== null) {
+        updatedTodos = todos.map((todo, index) =>
+          index === editIndex ? { ...todo, text: inputValue.trim() } : todo
+        );
+        setEditIndex(null);
+      } else {
+        updatedTodos = [...todos, { text: inputValue.trim(), completed: false }];
+      }
+      setTodos(updatedTodos);
+      saveTodos(updatedTodos);
+      setInputValue('');
+    } else {
+      Alert.alert('Validation', 'Please enter something');
+    }
+  };
+
+  const handleEdit = (index) => {
+    setInputValue(todos[index].text);
+    setEditIndex(index);
   };
 
   const handleDelete = (index) => {
-    const newTodos = todos.filter((_, i) => i !== index);
-    setTodos(newTodos);
+    const updatedTodos = todos.filter((_, i) => i !== index);
+    setTodos(updatedTodos);
+    saveTodos(updatedTodos);
+  };
+
+  const handleComplete = (index) => {
+    const updatedTodos = todos.map((todo, i) =>
+      i === index ? { ...todo, completed: !todo.completed } : todo
+    );
+    setTodos(updatedTodos);
+    saveTodos(updatedTodos);
+  };
+
+  const getFilteredTodos = () => {
+    if (filter === 'completed') {
+      return todos.filter(todo => todo.completed);
+    } else if (filter === 'pending') {
+      return todos.filter(todo => !todo.completed);
+    }
+    return todos;
+  };
+
+  const renderFilterButton = (title, currentFilter) => {
+    return (
+      <TouchableOpacity 
+        style={[styles.filterButton, filter === currentFilter && styles.activeFilterButton]}
+        onPress={() => setFilter(currentFilter)}
+      >
+        <Text style={[styles.filterButtonText, filter === currentFilter && styles.activeFilterButtonText]}>
+          {title}
+        </Text>
+      </TouchableOpacity>
+    );
   };
 
   return (
@@ -39,18 +105,35 @@ export default function Todolist() {
           onChangeText={setInputValue}
         />
         <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-          <Text style={styles.buttonText}>Submit</Text>
+          <Text style={styles.buttonText}>{editIndex !== null ? 'Edit' : 'Submit'}</Text>
         </TouchableOpacity>
       </View>
+      <View style={styles.filters}>
+        {renderFilterButton('All', 'all')}
+        {renderFilterButton('Completed', 'completed')}
+        {renderFilterButton('Pending', 'pending')}
+      </View>
       <FlatList
-        data={todos}
+        data={getFilteredTodos()}
         keyExtractor={(item, index) => index.toString()}
         renderItem={({ item, index }) => (
           <View style={styles.todoItem}>
-            <Text style={styles.todoText}>{item}</Text>
+            <Text style={[styles.todoText, item.completed && styles.completedText]}>{item.text}</Text>
             <View style={styles.buttonContainer}>
-              <ToDoButtons title={'Add'} onPress={() => handleAdd(index)} />
-              <ToDoButtons title={'Delete'} onPress={() => handleDelete(index)} />
+              <TouchableOpacity style={styles.actionButton} onPress={() => handleEdit(index)}>
+                <FontAwesome name="edit" size={24} color="blue" />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.actionButton} onPress={() => handleDelete(index)}>
+                <FontAwesome name="trash" size={24} color="red" />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleComplete(index)}>
+                <FontAwesome 
+                  name={item.completed ? 'check-circle' : 'circle-o'} 
+                  size={24} 
+                  color={item.completed ? 'green' : 'gray'} 
+                  style={styles.icon}
+                />
+              </TouchableOpacity>
             </View>
           </View>
         )}
@@ -111,7 +194,45 @@ const styles = StyleSheet.create({
     color: '#333',
     flex: 1,
   },
+  completedText: {
+    textDecorationLine: 'line-through',
+    color: 'gray',
+  },
   buttonContainer: {
     flexDirection: 'row',
+    alignItems: 'center',
+  },
+  icon: {
+    marginLeft: 10,
+  },
+  filters: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 20,
+  },
+  filterButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    backgroundColor: '#e0e0e0',
+  },
+  activeFilterButton: {
+    backgroundColor: 'green',
+  },
+  filterButtonText: {
+    color: '#333',
+    fontWeight: 'bold',
+  },
+  activeFilterButtonText: {
+    color: '#fff',
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 10,
+  },
+  actionText: {
+    marginLeft: 5,
+    fontSize: 16,
   },
 });
