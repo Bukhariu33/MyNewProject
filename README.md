@@ -79,4 +79,7 @@ To learn more about React Native, take a look at the following resources:
 - [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
 <img width="953" alt="todo" src="https://github.com/user-attachments/assets/8723edc8-bef9-437b-9cb4-3cdf2629f194">
 
+enhaced functionality Todo App
+<img width="943" alt="task with async" src="https://github.com/user-attachments/assets/77cc1aa4-a153-4205-afb3-df66df8fb1b4">
+
 - 
