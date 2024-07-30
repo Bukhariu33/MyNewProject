@@ -83,5 +83,8 @@ To learn more about React Native, take a look at the following resources:
 
 enhaced functionality Todo App
 <img width="943" alt="task with async" src="https://github.com/user-attachments/assets/77cc1aa4-a153-4205-afb3-df66df8fb1b4">
+<img width="941" alt="bottom tab navigation" src="https://github.com/user-attachments/assets/b0f2d35b-bcbb-4a64-9e7b-901d0f399ed4">
+
+
 
 - 
