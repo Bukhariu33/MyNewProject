@@ -1,11 +1,11 @@
 import { View, Text, StyleSheet} from 'react-native'
 import React from 'react'
-import Todolist from './src/screens/todolist'
+import MyTabs from './src/navigation/bottomTabNavigation'
 
 export default function App() {
   return (
     
-      <Todolist/>
+      <MyTabs/>
   )
 }
 
